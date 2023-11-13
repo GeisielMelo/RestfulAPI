@@ -6,6 +6,11 @@ class UsersController {
 
     return res.status(200).json(users)
   }
+
+  async message(req: Request, res: Response): Promise<Response> {
+    const { message } = req.body
+    return res.status(200).json({ message })
+  }
 }
 
 export default new UsersController()
