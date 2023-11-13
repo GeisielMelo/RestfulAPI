@@ -34,6 +34,21 @@ export default class AuthService {
     await this.blacklistToken(token)
   }
 
+  async validateTokenOwner(id: string, token: string): Promise<void> {
+    try {
+      const userDecoded = jwt.verify(token, config.auth.secret) as {
+        id: string
+      }
+
+      if (userDecoded.id !== id) {
+        throw new AuthError('Invalid token owner.')
+      }
+    } catch (error) {
+      console.error(error)
+      throw new AuthError('Invalid token.')
+    }
+  }
+
   async validateToken(token: string): Promise<string> {
     try {
       if (await this.isTokenBlacklisted(token))
