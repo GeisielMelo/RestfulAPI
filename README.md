@@ -1,2 +1,61 @@
-# api-rest-v2
- RESTFUL API with TypeScript.
+
+# REST API Using TypeScript And NodeJs
+
+TypeScript RESTful API built with Redis, Node, and Express. This repository serves as a template for streamlined development, allowing for quick setup and bypassing minor implementation steps in future applications.
+
+## API Reference
+
+#### Sign In
+
+```http
+  POST /auth/sign-in/
+```
+
+| Parameter | Type     | Description                |
+| :-------- | :------- | :------------------------- |
+| `email` `password` | `object` | returns a JWT |
+
+#### Sign Out
+
+```http
+  DELETE /auth/sign-out/
+```
+
+| Parameter | Type     | Description                |
+| :-------- | :------- | :------------------------- |
+| `id`, `token`| `object` | destroy a JWT |
+
+#### Get All Users
+
+```http
+  GET /users
+```
+
+| Parameter | Type     | Description                |
+| :-------- | :------- | :------------------------- |
+|  |  | **Required**: JWT token |
+
+#### Return a message
+
+```http
+  POST /users/message
+```
+
+| Parameter | Type     | Description                |
+| :-------- | :------- | :------------------------- |
+| `message` | `string` | **Required**: JWT token |
+
+## Tech Stack
+
+**Server:** Node, Express
+
+
+## License
+
+- [MIT](https://choosealicense.com/licenses/mit/)
+
+
+## Authors
+
+- [@GeisielMelo](https://www.github.com/GeisielMelo)
+
