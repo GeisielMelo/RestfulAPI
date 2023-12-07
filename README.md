@@ -1,5 +1,5 @@
 
-# REST API Using TypeScript And NodeJs
+# REST API with TypeScript and Node.js
 
 TypeScript RESTful API built with Redis, Node, and Express. This repository serves as a template for streamlined development, allowing for quick setup and bypassing minor implementation steps in future applications.
 
