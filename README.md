@@ -1,14 +1,14 @@
 
 # REST API with TypeScript and Node.js
 
-TypeScript RESTful API built with Redis, Node, and Express. This repository serves as a template for streamlined development, allowing for quick setup and bypassing minor implementation steps in future applications.
+TypeScript RESTful API built with MongoDB, Node, and Express. This repository serves as a template for streamlined development, allowing for quick setup and bypassing minor implementation steps in future applications.
 
 ## API Reference
 
 #### Sign In
 
 ```http
-  POST /auth/sign-in/
+  POST /api/auth/sign-in/
 ```
 
 | Parameter | Type     | Description                |
@@ -18,7 +18,7 @@ TypeScript RESTful API built with Redis, Node, and Express. This repository serv
 #### Sign Out
 
 ```http
-  DELETE /auth/sign-out/
+  DELETE /api/auth/sign-out/
 ```
 
 | Parameter | Type     | Description                |
@@ -28,7 +28,7 @@ TypeScript RESTful API built with Redis, Node, and Express. This repository serv
 #### Get All Users
 
 ```http
-  GET /users
+  GET /api/users
 ```
 
 | Parameter | Type     | Description                |
@@ -38,7 +38,7 @@ TypeScript RESTful API built with Redis, Node, and Express. This repository serv
 #### Return a message
 
 ```http
-  POST /users/message
+  POST /api/users/message
 ```
 
 | Parameter | Type     | Description                |
