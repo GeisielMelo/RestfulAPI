@@ -16,9 +16,13 @@ class AuthController {
   }
 
   async destroy(req: Request, res: Response): Promise<Response> {
-    const { id, token } = req.body
+    const { authorization } = req.headers
 
-    id && (await new AuthService().signOut(token))
+    if (!authorization) return res.status(401).send()
+
+    const token = authorization.replace('Bearer ', '')
+
+    await new AuthService().signOut(token)
     return res.status(200).send()
   }
 }

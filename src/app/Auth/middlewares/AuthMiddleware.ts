@@ -3,16 +3,14 @@ import AuthService from '../services/AuthService'
 import AuthError from '../exceptions/AuthError'
 
 export default async (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization
+  const { authorization } = req.headers
 
-  if (!authHeader) return res.status(401).json({ error: 'No token provided' })
+  if (!authorization) return res.status(401).json({ error: 'No token provided' })
 
-  const [, token] = authHeader.split(' ')
+  const [, token] = authorization.split(' ')
 
   try {
-    const id = await new AuthService().validateToken(token)
-
-    req.user = { id, token }
+    await new AuthService().validateToken(token)
   } catch (error) {
     if (error instanceof AuthError) {
       return res.status(401).send()
