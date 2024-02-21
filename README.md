@@ -13,7 +13,7 @@ TypeScript RESTful API built with MongoDB, Node, and Express. This repository se
 
 | Parameter | Type     | Description                |
 | :-------- | :------- | :------------------------- |
-| `email` `password` | `object` | returns a JWT |
+| `{ email, password }` | `object` | returns a JWT |
 
 #### Sign Out
 
@@ -23,31 +23,31 @@ TypeScript RESTful API built with MongoDB, Node, and Express. This repository se
 
 | Parameter | Type     | Description                |
 | :-------- | :------- | :------------------------- |
-| `id`, `token`| `object` | destroy a JWT |
+| `token`| `string` | destroy a JWT |
 
-#### Get All Users
+#### Get User
 
 ```http
-  GET /api/users
+  GET /api/users/:id
 ```
 
 | Parameter | Type     | Description                |
 | :-------- | :------- | :------------------------- |
-|  |  | **Required**: JWT token |
+| `id` | `string`  | get user, **Required**: JWT token |
 
-#### Return a message
+#### Create User
 
 ```http
-  POST /api/users/message
+  POST /api/users
 ```
 
 | Parameter | Type     | Description                |
 | :-------- | :------- | :------------------------- |
-| `message` | `string` | **Required**: JWT token |
+| `{ email, password }` | `object` | create user |
 
 ## Tech Stack
 
-**Server:** Node, Express
+**Server:** Node, Express, Mongo
 
 
 ## License
