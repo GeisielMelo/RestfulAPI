@@ -3,7 +3,7 @@ import auth from './controllers/AuthController'
 
 const routes = Router()
 
-routes.post('/auth/sign-in', auth.create)
-routes.delete('/auth/sign-out', auth.destroy)
+routes.post('/api/auth/sign-in', auth.create)
+routes.delete('/api/auth/sign-out', auth.destroy)
 
 export default routes
