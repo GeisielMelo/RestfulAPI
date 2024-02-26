@@ -12,7 +12,13 @@ export default {
     uri: process.env.MONGODB_URI,
   },
   auth: {
-    secret: process.env.AUTH_SECRET || 'dev',
-    expiresIn: process.env.AUTH_EXPIRES_IN || '7d',
+    secret: {
+      access: process.env.AUTH_ACCESS_TOKEN_SECRET || 'dev',
+      refresh: process.env.AUTH_REFRESH_TOKEN_SECRET || 'dev',
+    },
+    expiresIn: {
+      access: process.env.AUTH_ACCESS_TOKEN_EXPIRES_IN,
+      refresh: process.env.AUTH_REFRESH_TOKEN_EXPIRES_IN,
+    },
   },
 }
