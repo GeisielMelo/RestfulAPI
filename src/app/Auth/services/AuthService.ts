@@ -1,105 +1,78 @@
-import jwt from 'jsonwebtoken'
-import AuthError from '../exceptions/AuthError'
+import jwt, { JwtPayload } from 'jsonwebtoken'
 import config from '../../../config'
 import database from '../../../database'
+import AuthError from '../exceptions/AuthError'
 import User from '../../../database/models/User'
-import Token from '../../../database/models/Token'
-import decryptPassword from '../../Auth/services/PasswordService'
+
+interface ITokens {
+  accessToken: string
+  refreshToken: string
+}
+interface IRoles {
+  User: number
+  Editor: number
+  Admin: number
+}
 
 export default class AuthService {
-  async signIn(email: string, password: string): Promise<{ user: object; token: string }> {
+  async generateTokens(id: string, roles: IRoles): Promise<ITokens> {
     try {
-      await database.connect()
-      const user = await User.findOne({ email })
-
-      if (!user) {
-        throw new AuthError('User not found')
-      }
-
-      const passwordDecrypted = await decryptPassword(password, user.password)
-
-      if (!passwordDecrypted) {
-        throw new AuthError('Invalid credentials')
-      }
-
-      const { id } = user
-
-      // Generate token
-      const token = jwt.sign({ id }, config.auth.secret, {
-        expiresIn: config.auth.expiresIn,
+      const accessToken = jwt.sign({ id, roles }, config.auth.secret.access, {
+        expiresIn: config.auth.expiresIn.access,
       })
 
-      return { user: { id, email }, token }
-    } finally {
-      await database.disconnect()
-    }
-  }
+      const refreshToken = jwt.sign({ id }, config.auth.secret.refresh, {
+        expiresIn: config.auth.expiresIn.refresh,
+      })
 
-  async signOut(token: string) {
-    await this.blacklistToken(token)
-  }
-
-  async validateTokenOwner(id: string, token: string): Promise<void> {
-    try {
-      const userDecoded = jwt.verify(token, config.auth.secret) as {
-        id: string
-      }
-
-      if (userDecoded.id !== id) {
-        throw new AuthError('Invalid token owner.')
-      }
+      return { accessToken, refreshToken }
     } catch (error) {
-      if (error instanceof Error) {
-        throw new AuthError(error.message)
-      } else {
-        throw new AuthError('Error on validate token owner.')
-      }
+      throw new AuthError('Error on generateTokens.')
     }
   }
 
-  async validateToken(token: string): Promise<void> {
-    try {
-      if (await this.isTokenBlacklisted(token)) {
-        throw new Error('Token was blacklisted.')
-      }
-
-      if (await this.isTokenExpired(token)) {
-        throw new Error('Token expired.')
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new AuthError(error.message)
-      } else {
-        throw new AuthError('Error on validate token.')
-      }
-    }
+  async validateAccessToken(token: string): Promise<string | JwtPayload> {
+    return jwt.verify(token, config.auth.secret.access) as JwtPayload
   }
 
-  private async isTokenBlacklisted(token: string): Promise<boolean> {
+  async validateRefreshToken(refreshToken: string): Promise<string | JwtPayload> {
     try {
       await database.connect()
-      const blacklistedToken = await Token.findOne({ token })
-      return !!blacklistedToken
+      const user = await User.findOne({ refreshToken })
+
+      if (!user) throw new AuthError('User not found.')
+
+      if (!user.refreshToken.length) throw new AuthError('Token not found.')
+
+      user.refreshToken.forEach((element) => {
+        if (element === refreshToken) return
+        throw new AuthError("Token doesn't exists.")
+      })
+
+      return jwt.verify(refreshToken, config.auth.secret.refresh)
     } catch (error) {
-      throw new AuthError('Error on blacklisted token.')
+      if (error instanceof AuthError) throw new AuthError(error.message)
+      throw new AuthError('Error on validateRefreshToken.')
     } finally {
       await database.disconnect()
     }
   }
 
-  private async blacklistToken(token: string): Promise<void> {
+  async isRefreshTokenExpired(token: string): Promise<boolean> {
     try {
-      await database.connect()
-      await Token.create({ token })
-    } catch (error) {
-      throw new AuthError('Error on blacklist token.')
-    } finally {
-      await database.disconnect()
+      const decoded = jwt.verify(token, config.auth.secret.refresh) as JwtPayload
+      return decoded.exp ? Date.now() >= new Date(decoded.exp * 1000).getTime() : false
+    } catch {
+      return true
     }
   }
 
-  private async isTokenExpired(token: string): Promise<boolean> {
-    const decoded = jwt.verify(token, config.auth.secret) as { exp: number }
-    return decoded.exp < Math.floor(Date.now() / 1000)
+  async isAccessTokenExpired(token: string): Promise<boolean> {
+    try {
+      const decoded = jwt.verify(token, config.auth.secret.refresh) as JwtPayload
+      return decoded.exp ? Date.now() >= new Date(decoded.exp * 1000).getTime() : false
+    } catch {
+      return true
+    }
   }
 }
