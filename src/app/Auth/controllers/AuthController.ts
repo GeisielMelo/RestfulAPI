@@ -4,7 +4,7 @@ import AuthError from '../exceptions/AuthError'
 import database from '../../../database'
 import User from '../../../database/models/User'
 import decryptPassword from '../../Auth/services/PasswordService'
-import { COOKIE_SET_OPTIONS, COOKIE_UNSET_OPTIONS } from '../../../config/cookies'
+import { REFRESH_OPTIONS, ACCESS_OPTIONS, UNSET_OPTIONS } from '../../../config/cookies'
 
 class AuthController {
   /**  Create Authorization. */
@@ -19,16 +19,16 @@ class AuthController {
       const passwordDecrypted = await decryptPassword(password, user.password)
       if (!passwordDecrypted) return res.status(400).send({ error: 'Invalid credentials' })
 
-      const { id, roles } = user
-      const { accessToken, refreshToken } = await new AuthService().generateTokens(id, roles)
+      const accessToken = await AuthService.createAccessToken(user.id)
+      const refreshToken = await AuthService.createRefreshToken(user.id)
 
       user.refreshToken = [...[], refreshToken]
       await user.save()
 
-      res.cookie('refreshToken', refreshToken, COOKIE_SET_OPTIONS)
-      return res.status(200).send({ user: { id, roles }, token: accessToken })
+      res.cookie('accessToken', accessToken, ACCESS_OPTIONS)
+      res.cookie('refreshToken', refreshToken, REFRESH_OPTIONS)
+      return res.status(200).send({ id: user.id, email: user.email })
     } catch (error) {
-      console.log(error)
       if (error instanceof AuthError) return res.status(401).send({ error: error.message })
       return res.status(401).send({ error: 'Internal server error.' })
     } finally {
@@ -39,38 +39,34 @@ class AuthController {
   /** Refresh Authorization. */
   async update(req: Request, res: Response): Promise<Response> {
     const { refreshToken } = req.cookies
-    if (!refreshToken) return res.status(401).send({ error: 'Refresh token not found.' })
-    res.clearCookie('refreshToken', COOKIE_UNSET_OPTIONS)
 
     try {
       await database.connect()
       const user = await User.findOne({ refreshToken })
 
-      // Detected refresh token reuse
-      if (!user) return res.status(403).send({ error: 'Suspicious activity detected' })
+      // Detected registered refresh token.
+      if (!user) {
+        res.clearCookie('refreshToken', REFRESH_OPTIONS)
+        return res.status(403).send({ error: 'Suspicious activity detected.' })
+      }
 
       const newRefreshTokenArray = user.refreshToken.filter((token) => token !== refreshToken)
 
       // Evaluate Token
-      const expiredToken = await new AuthService().isRefreshTokenExpired(refreshToken)
+      const expiredToken = await AuthService.isRefreshTokenExpired(refreshToken)
       if (expiredToken) {
         user.refreshToken = [...newRefreshTokenArray]
         await user.save()
-      } else {
-        return res.status(403).send({ error: 'Suspicious activity detected' })
+        res.clearCookie('refreshToken', UNSET_OPTIONS)
+        return res.status(403).send({ error: 'The refresh token has expired, please log in.' })
       }
 
-      // Refresh token was still valid
-      const { id, roles } = user
-      const newTokens = await new AuthService().generateTokens(id, roles)
-
-      // Saving refreshToken with current user
-      user.refreshToken = [...newRefreshTokenArray, newTokens.refreshToken]
-      await user.save()
+      // Refresh token still valid.
+      const accessToken = await AuthService.createAccessToken(user.id)
 
       // Creates Secure Cookie with refresh token
-      res.cookie('refreshToken', refreshToken, COOKIE_SET_OPTIONS)
-      return res.status(200).send({ user: { id, roles }, token: newTokens.accessToken })
+      res.cookie('accessToken', accessToken, ACCESS_OPTIONS)
+      return res.status(200).send({ id: user.id, email: user.email })
     } catch (error) {
       if (error instanceof AuthError) return res.status(401).send({ error: error.message })
       return res.status(401).send({ error: 'Internal server error.' })
@@ -82,7 +78,7 @@ class AuthController {
   /** Delete Authorization. */
   async delete(req: Request, res: Response): Promise<Response> {
     const { refreshToken } = req.cookies
-    if (!refreshToken) return res.status(204).send({ message: 'Logout successfully' })
+    if (!refreshToken) return res.status(20).send({ message: 'Logout successfully' })
 
     try {
       await database.connect()
@@ -93,8 +89,9 @@ class AuthController {
         await user.save()
       }
 
-      res.clearCookie('refreshToken', COOKIE_UNSET_OPTIONS)
-      return res.status(204).send({ message: 'Logout successfully' })
+      res.clearCookie('accessToken', UNSET_OPTIONS)
+      res.clearCookie('refreshToken', UNSET_OPTIONS)
+      return res.status(200).send({ message: 'Logout successfully' })
     } catch (error) {
       if (error instanceof AuthError) return res.status(401).send({ error: error.message })
       return res.status(401).send({ error: 'Internal server error.' })
@@ -104,8 +101,8 @@ class AuthController {
   }
 
   // TODO Remove this function.
-  async teste(req: Request, res: Response): Promise<Response> {
-    return res.send('teste')
+  async test(req: Request, res: Response): Promise<Response> {
+    return res.status(200).send({ message: 'OK' })
   }
 }
 
